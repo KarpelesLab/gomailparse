@@ -1,4 +1,4 @@
-package gomime
+package gomailparse
 
 import (
 	"bufio"

@@ -1,9 +1,9 @@
-# gomime
+# gomailparse
 
-[![Go Reference](https://pkg.go.dev/badge/github.com/KarpelesLab/gomime.svg)](https://pkg.go.dev/github.com/KarpelesLab/gomime)
-[![Build Status](https://github.com/KarpelesLab/gomime/actions/workflows/test.yml/badge.svg)](https://github.com/KarpelesLab/gomime/actions/workflows/test.yml)
-[![Coverage Status](https://coveralls.io/repos/github/KarpelesLab/gomime/badge.svg?branch=master)](https://coveralls.io/github/KarpelesLab/gomime?branch=master)
-[![Go Report Card](https://goreportcard.com/badge/github.com/KarpelesLab/gomime)](https://goreportcard.com/report/github.com/KarpelesLab/gomime)
+[![Go Reference](https://pkg.go.dev/badge/github.com/KarpelesLab/gomailparse.svg)](https://pkg.go.dev/github.com/KarpelesLab/gomailparse)
+[![Build Status](https://github.com/KarpelesLab/gomailparse/actions/workflows/test.yml/badge.svg)](https://github.com/KarpelesLab/gomailparse/actions/workflows/test.yml)
+[![Coverage Status](https://coveralls.io/repos/github/KarpelesLab/gomailparse/badge.svg?branch=master)](https://coveralls.io/github/KarpelesLab/gomailparse?branch=master)
+[![Go Report Card](https://goreportcard.com/badge/github.com/KarpelesLab/gomailparse)](https://goreportcard.com/report/github.com/KarpelesLab/gomailparse)
 
 A streaming MIME parser for Go. Reads emails from an `io.Reader` and produces a part tree containing only headers and byte offsets — body data is never buffered. This makes it efficient for indexing large messages and locating attachments or part bodies for later random access.
 
@@ -18,7 +18,7 @@ A streaming MIME parser for Go. Reads emails from an `io.Reader` and produces a 
 ## Install
 
 ```
-go get github.com/KarpelesLab/gomime
+go get github.com/KarpelesLab/gomailparse
 ```
 
 ## Usage
@@ -30,14 +30,14 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/KarpelesLab/gomime"
+	"github.com/KarpelesLab/gomailparse"
 )
 
 func main() {
 	f, _ := os.Open("message.eml")
 	defer f.Close()
 
-	part, err := gomime.Parse(f)
+	part, err := gomailparse.Parse(f)
 	if err != nil {
 		panic(err)
 	}
@@ -59,7 +59,7 @@ func main() {
 
 ## API
 
-### `gomime.Parse(r io.Reader) (*Part, error)`
+### `gomailparse.Parse(r io.Reader) (*Part, error)`
 
 Parses a MIME message and returns the root part. Only headers and byte offsets are retained.
 
