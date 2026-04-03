@@ -432,3 +432,55 @@ func TestUnquotedBoundary(t *testing.T) {
 		t.Errorf("body = %q", body)
 	}
 }
+
+func TestRFC2047EncodedFilename(t *testing.T) {
+	raw := "Content-Type: multipart/mixed; boundary=b\r\n" +
+		"\r\n" +
+		"--b\r\n" +
+		"Content-Type: application/pdf;\r\n" +
+		" name=\"=?UTF-8?B?5pel5pys6Kqe44OV44Kh44Kk44OrLnBkZg==?=\"\r\n" +
+		"Content-Disposition: attachment;\r\n" +
+		" filename=\"=?UTF-8?B?5pel5pys6Kqe44OV44Kh44Kk44OrLnBkZg==?=\"\r\n" +
+		"\r\n" +
+		"data\r\n" +
+		"--b--\r\n"
+
+	part, err := Parse(strings.NewReader(raw))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	att := part.Children[0]
+	want := "\u65e5\u672c\u8a9e\u30d5\u30a1\u30a4\u30eb.pdf" // 日本語ファイル.pdf
+	if att.Name != want {
+		t.Errorf("Name = %q, want %q", att.Name, want)
+	}
+	if att.Filename != want {
+		t.Errorf("Filename = %q, want %q", att.Filename, want)
+	}
+}
+
+func TestRFC2047QEncodedFilename(t *testing.T) {
+	raw := "Content-Type: multipart/mixed; boundary=b\r\n" +
+		"\r\n" +
+		"--b\r\n" +
+		"Content-Type: text/plain; name=\"=?ISO-8859-1?Q?R=E9sum=E9.txt?=\"\r\n" +
+		"Content-Disposition: attachment; filename=\"=?ISO-8859-1?Q?R=E9sum=E9.txt?=\"\r\n" +
+		"\r\n" +
+		"data\r\n" +
+		"--b--\r\n"
+
+	part, err := Parse(strings.NewReader(raw))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	att := part.Children[0]
+	want := "R\u00e9sum\u00e9.txt" // Résumé.txt
+	if att.Name != want {
+		t.Errorf("Name = %q, want %q", att.Name, want)
+	}
+	if att.Filename != want {
+		t.Errorf("Filename = %q, want %q", att.Filename, want)
+	}
+}

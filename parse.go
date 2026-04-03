@@ -146,7 +146,7 @@ func extractContentInfo(part *Part) {
 			if c := params["charset"]; c != "" {
 				part.Charset = c
 			}
-			part.Name = params["name"]
+			part.Name = decodeWords(params["name"])
 		} else {
 			// Fallback for malformed values.
 			part.ContentType = strings.ToLower(strings.TrimSpace(ct))
@@ -169,7 +169,7 @@ func extractContentInfo(part *Part) {
 		disposition, params, err := mime.ParseMediaType(cd)
 		if err == nil {
 			part.ContentDisposition = disposition
-			part.Filename = params["filename"]
+			part.Filename = decodeWords(params["filename"])
 		} else {
 			// Fallback: extract the disposition token.
 			if i := strings.IndexByte(cd, ';'); i >= 0 {
@@ -179,6 +179,22 @@ func extractContentInfo(part *Part) {
 			}
 		}
 	}
+}
+
+// wordDecoder decodes RFC 2047 encoded words in header values.
+var wordDecoder = new(mime.WordDecoder)
+
+// decodeWords decodes RFC 2047 encoded words (e.g. =?UTF-8?B?...?=)
+// in s, returning s unchanged if decoding fails or is not needed.
+func decodeWords(s string) string {
+	if s == "" {
+		return s
+	}
+	decoded, err := wordDecoder.DecodeHeader(s)
+	if err != nil {
+		return s
+	}
+	return decoded
 }
 
 // parseMultipartBody reads through the multipart body delimited by
