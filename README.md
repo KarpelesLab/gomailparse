@@ -1,5 +1,10 @@
 # gomime
 
+[![Go Reference](https://pkg.go.dev/badge/github.com/KarpelesLab/gomime.svg)](https://pkg.go.dev/github.com/KarpelesLab/gomime)
+[![Build Status](https://github.com/KarpelesLab/gomime/actions/workflows/test.yml/badge.svg)](https://github.com/KarpelesLab/gomime/actions/workflows/test.yml)
+[![Coverage Status](https://coveralls.io/repos/github/KarpelesLab/gomime/badge.svg?branch=master)](https://coveralls.io/github/KarpelesLab/gomime?branch=master)
+[![Go Report Card](https://goreportcard.com/badge/github.com/KarpelesLab/gomime)](https://goreportcard.com/report/github.com/KarpelesLab/gomime)
+
 A streaming MIME parser for Go. Reads emails from an `io.Reader` and produces a part tree containing only headers and byte offsets — body data is never buffered. This makes it efficient for indexing large messages and locating attachments or part bodies for later random access.
 
 ## Features
