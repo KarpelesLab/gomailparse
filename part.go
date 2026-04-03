@@ -33,6 +33,13 @@ type Part struct {
 	Children []*Part
 }
 
+// DecodedHeader returns the first header value matching key, with any
+// RFC 2047 encoded words decoded. This is a shorthand for
+// [DecodeHeader](p.Header.Get(key)).
+func (p *Part) DecodedHeader(key string) string {
+	return DecodeHeader(p.Header.Get(key))
+}
+
 // Walk calls fn for each part in the MIME tree in depth-first order.
 // If fn returns false, traversal stops and Walk returns false.
 func (p *Part) Walk(fn func(*Part) bool) bool {

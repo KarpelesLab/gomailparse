@@ -484,3 +484,30 @@ func TestRFC2047QEncodedFilename(t *testing.T) {
 		t.Errorf("Filename = %q, want %q", att.Filename, want)
 	}
 }
+
+func TestDecodedHeader(t *testing.T) {
+	raw := "From: =?UTF-8?B?5bGx55Sw5aSq6YOO?= <taro@example.com>\r\n" +
+		"Subject: =?UTF-8?Q?Caf=C3=A9?=\r\n" +
+		"\r\n"
+
+	part, err := Parse(strings.NewReader(raw))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Raw header is preserved.
+	if got := part.Header.Get("Subject"); got != "=?UTF-8?Q?Caf=C3=A9?=" {
+		t.Errorf("raw Subject = %q", got)
+	}
+	// DecodedHeader returns decoded text.
+	if got := part.DecodedHeader("Subject"); got != "Caf\u00e9" {
+		t.Errorf("decoded Subject = %q, want %q", got, "Caf\u00e9")
+	}
+	if got := part.DecodedHeader("From"); got != "\u5c71\u7530\u592a\u90ce <taro@example.com>" {
+		t.Errorf("decoded From = %q", got)
+	}
+	// Missing header returns empty.
+	if got := part.DecodedHeader("X-Missing"); got != "" {
+		t.Errorf("missing header = %q", got)
+	}
+}
