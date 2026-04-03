@@ -2,7 +2,7 @@ package gomime
 
 import (
 	"io"
-	"strings"
+	"net/textproto"
 )
 
 // Part represents a MIME part with headers and byte offset information.
@@ -16,6 +16,10 @@ type Part struct {
 	BodyPos  int64 // start of body (after headers and blank line separator)
 	EndPos   int64 // end of body content
 
+	// Header contains the parsed MIME headers (canonical key form).
+	// Use Header.Get("Subject") etc. to access values.
+	Header textproto.MIMEHeader
+
 	// Content metadata extracted from headers.
 	ContentType        string // lowercase, e.g. "text/plain", "multipart/mixed"
 	Boundary           string // boundary parameter for multipart types
@@ -27,50 +31,6 @@ type Part struct {
 
 	// Children contains sub-parts for multipart types.
 	Children []*Part
-
-	headers []headerEntry
-}
-
-// HeaderField is a single header key-value pair as returned by [Part.Headers].
-type HeaderField struct {
-	Key   string // original case
-	Value string // unfolded value
-}
-
-type headerEntry struct {
-	key   string // original case
-	value string // unfolded value
-}
-
-// Get returns the first header value matching key (case-insensitive).
-// Returns empty string if not found.
-func (p *Part) Get(key string) string {
-	for _, h := range p.headers {
-		if strings.EqualFold(h.key, key) {
-			return h.value
-		}
-	}
-	return ""
-}
-
-// GetAll returns all header values matching key (case-insensitive).
-func (p *Part) GetAll(key string) []string {
-	var result []string
-	for _, h := range p.headers {
-		if strings.EqualFold(h.key, key) {
-			result = append(result, h.value)
-		}
-	}
-	return result
-}
-
-// Headers returns all headers in their original order.
-func (p *Part) Headers() []HeaderField {
-	result := make([]HeaderField, len(p.headers))
-	for i, h := range p.headers {
-		result[i] = HeaderField{Key: h.key, Value: h.value}
-	}
-	return result
 }
 
 // Walk calls fn for each part in the MIME tree in depth-first order.

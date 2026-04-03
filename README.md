@@ -71,13 +71,15 @@ type Part struct {
     BodyPos  int64  // byte offset: start of body
     EndPos   int64  // byte offset: end of body
 
+    Header textproto.MIMEHeader // parsed headers (canonical key form)
+
     ContentType        string // e.g. "text/plain"
     Boundary           string // for multipart types
     Charset            string // defaults to "us-ascii"
     TransferEncoding   string // defaults to "7bit"
     ContentDisposition string // "attachment", "inline", etc.
     Name               string // name= from Content-Type
-    Filename           string // filename= from Content-Disposition
+    Filename           string // filename= from Content-Disposition (RFC 2231 supported)
 
     Children []*Part
 }
@@ -85,9 +87,11 @@ type Part struct {
 
 ### Header access
 
-- `Get(key string) string` — first value, case-insensitive lookup
-- `GetAll(key string) []string` — all values
-- `Headers() []HeaderField` — all headers in order
+`Header` is a standard [`textproto.MIMEHeader`](https://pkg.go.dev/net/textproto#MIMEHeader):
+
+- `Header.Get("Subject")` — first value (case-insensitive)
+- `Header.Values("Received")` — all values
+- `Header["Content-Type"]` — direct map access with canonical key
 
 ### Traversal
 

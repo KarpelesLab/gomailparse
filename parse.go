@@ -4,6 +4,8 @@ import (
 	"bufio"
 	"bytes"
 	"io"
+	"mime"
+	"net/textproto"
 	"strings"
 )
 
@@ -68,16 +70,16 @@ func parsePart(lr *lineReader, terminatingBoundary string) (*Part, bool, error) 
 }
 
 // parseHeaders reads RFC 2822 headers, handling folded continuation lines.
+// Headers are stored in a [textproto.MIMEHeader] with canonical key form.
 func parseHeaders(lr *lineReader, part *Part) error {
+	part.Header = make(textproto.MIMEHeader)
+
 	var currentKey string
 	var currentValue strings.Builder
 
 	flush := func() {
 		if currentKey != "" {
-			part.headers = append(part.headers, headerEntry{
-				key:   currentKey,
-				value: currentValue.String(),
-			})
+			part.Header.Add(currentKey, currentValue.String())
 			currentKey = ""
 			currentValue.Reset()
 		}
@@ -123,7 +125,7 @@ func parseHeaders(lr *lineReader, part *Part) error {
 			continue
 		}
 
-		currentKey = string(trimmed[:colonIdx])
+		currentKey = textproto.CanonicalMIMEHeaderKey(string(trimmed[:colonIdx]))
 		currentValue.WriteString(strings.TrimSpace(string(trimmed[colonIdx+1:])))
 
 		if err != nil {
@@ -135,25 +137,26 @@ func parseHeaders(lr *lineReader, part *Part) error {
 
 // extractContentInfo populates convenience fields from parsed headers.
 func extractContentInfo(part *Part) {
-	// Content-Type
-	if ct := part.Get("Content-Type"); ct != "" {
-		mainType, params := parseHeaderParams(ct)
-		part.ContentType = strings.ToLower(mainType)
-		if b, ok := params["boundary"]; ok {
-			part.Boundary = b
-		}
-		if c, ok := params["charset"]; ok {
-			part.Charset = c
-		}
-		if n, ok := params["name"]; ok {
-			part.Name = n
+	// Content-Type — use mime.ParseMediaType for RFC 2231 support.
+	if ct := part.Header.Get("Content-Type"); ct != "" {
+		mediaType, params, err := mime.ParseMediaType(ct)
+		if err == nil {
+			part.ContentType = mediaType
+			part.Boundary = params["boundary"]
+			if c := params["charset"]; c != "" {
+				part.Charset = c
+			}
+			part.Name = params["name"]
+		} else {
+			// Fallback for malformed values.
+			part.ContentType = strings.ToLower(strings.TrimSpace(ct))
 		}
 	} else {
 		part.ContentType = "text/plain"
 	}
 
 	// Content-Transfer-Encoding
-	if te := part.Get("Content-Transfer-Encoding"); te != "" {
+	if te := part.Header.Get("Content-Transfer-Encoding"); te != "" {
 		part.TransferEncoding = strings.ToLower(strings.TrimSpace(te))
 	} else if strings.HasPrefix(part.ContentType, "multipart/") {
 		part.TransferEncoding = "8bit"
@@ -161,12 +164,19 @@ func extractContentInfo(part *Part) {
 		part.TransferEncoding = "7bit"
 	}
 
-	// Content-Disposition
-	if cd := part.Get("Content-Disposition"); cd != "" {
-		mainDisp, params := parseHeaderParams(cd)
-		part.ContentDisposition = strings.ToLower(mainDisp)
-		if f, ok := params["filename"]; ok {
-			part.Filename = f
+	// Content-Disposition — mime.ParseMediaType also handles RFC 2183 values.
+	if cd := part.Header.Get("Content-Disposition"); cd != "" {
+		disposition, params, err := mime.ParseMediaType(cd)
+		if err == nil {
+			part.ContentDisposition = disposition
+			part.Filename = params["filename"]
+		} else {
+			// Fallback: extract the disposition token.
+			if i := strings.IndexByte(cd, ';'); i >= 0 {
+				part.ContentDisposition = strings.ToLower(strings.TrimSpace(cd[:i]))
+			} else {
+				part.ContentDisposition = strings.ToLower(strings.TrimSpace(cd))
+			}
 		}
 	}
 }

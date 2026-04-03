@@ -17,10 +17,10 @@ func TestSimpleEmail(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if got := part.Get("From"); got != "sender@example.com" {
+	if got := part.Header.Get("From"); got != "sender@example.com" {
 		t.Errorf("From = %q", got)
 	}
-	if got := part.Get("Subject"); got != "Hello" {
+	if got := part.Header.Get("Subject"); got != "Hello" {
 		t.Errorf("Subject = %q", got)
 	}
 	if part.ContentType != "text/plain" {
@@ -192,10 +192,10 @@ func TestHeaderFolding(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if got := part.Get("Subject"); got != "This is a long subject line" {
+	if got := part.Header.Get("Subject"); got != "This is a long subject line" {
 		t.Errorf("Subject = %q", got)
 	}
-	if got := part.Get("From"); got != "test@example.com" {
+	if got := part.Header.Get("From"); got != "test@example.com" {
 		t.Errorf("From = %q", got)
 	}
 }
@@ -210,7 +210,7 @@ func TestDuplicateHeaders(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	vals := part.GetAll("Received")
+	vals := part.Header.Values("Received")
 	if len(vals) != 2 {
 		t.Fatalf("len(Received) = %d, want 2", len(vals))
 	}
@@ -378,11 +378,16 @@ func TestCaseInsensitiveHeaderLookup(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if part.Get("content-type") != "text/plain" {
-		t.Errorf("lowercase lookup failed: %q", part.Get("content-type"))
+	// textproto.MIMEHeader.Get canonicalizes keys automatically.
+	if part.Header.Get("content-type") != "text/plain" {
+		t.Errorf("lowercase lookup failed: %q", part.Header.Get("content-type"))
 	}
-	if part.Get("CONTENT-TYPE") != "text/plain" {
-		t.Errorf("uppercase lookup failed: %q", part.Get("CONTENT-TYPE"))
+	if part.Header.Get("CONTENT-TYPE") != "text/plain" {
+		t.Errorf("uppercase lookup failed: %q", part.Header.Get("CONTENT-TYPE"))
+	}
+	// Direct map access with canonical key.
+	if vals := part.Header["Content-Type"]; len(vals) != 1 || vals[0] != "text/plain" {
+		t.Errorf("direct map access failed: %v", vals)
 	}
 }
 
